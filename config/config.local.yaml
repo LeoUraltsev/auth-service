@@ -1,0 +1,8 @@
+app:
+  env: development #development, prod
+
+gRpc:
+  address: localhost:40051
+
+postgres:
+  dsn: "host=localhost port=5432 dbname=authservice user=postgres password=postgres"
