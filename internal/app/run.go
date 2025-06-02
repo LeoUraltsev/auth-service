@@ -27,6 +27,8 @@ func NewApp(log *slog.Logger, cfg config.Config) *App {
 }
 
 func (a *App) Run() error {
+	log := a.log
+	log.Info("starting app")
 
 	return nil
 }
