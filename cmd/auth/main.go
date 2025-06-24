@@ -14,13 +14,6 @@ func main() {
 		slog.Warn(err.Error())
 	}
 
-	slog.Info(
-		"loaded config",
-		slog.String("env", cfg.App.Env),
-		slog.String("grpc", cfg.GRPC.Address),
-		slog.String("postgres", cfg.Postgres.DSN),
-	)
-
 	log, err := logger.NewLogger(cfg.App.Env)
 	if err != nil {
 		slog.Error("failed to initialize logger", slog.String("err", err.Error()))
@@ -30,8 +23,13 @@ func main() {
 	log.Log.With(slog.String("env", cfg.App.Env))
 	log.Log.Info("initialized logger")
 
-	app.NewApp(
+	a := app.NewApp(
 		log.Log,
 		cfg,
 	)
+
+	err = a.Run()
+	if err != nil {
+		os.Exit(1)
+	}
 }

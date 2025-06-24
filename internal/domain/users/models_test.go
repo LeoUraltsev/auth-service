@@ -2,6 +2,7 @@ package users
 
 import (
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 	"reflect"
 	"testing"
 	"time"
@@ -13,23 +14,63 @@ func TestCreateUser(t *testing.T) {
 		email    Email
 		password Password
 	}
+	validPwd, _ := bcrypt.GenerateFromPassword([]byte("password"), bcrypt.DefaultCost)
 	tests := []struct {
 		name    string
 		args    args
-		want    *User
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "success",
+			args: args{
+				name:  Name("user"),
+				email: Email{value: "validemail@gmail.com"},
+				password: Password{
+					validPwd,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "failure name",
+			args: args{
+				name:  Name(""),
+				email: Email{value: "validemail@gmail.com"},
+				password: Password{
+					validPwd,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "failure email",
+			args: args{
+				name:  Name(""),
+				email: Email{value: ""},
+				password: Password{
+					validPwd,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "failure password",
+			args: args{
+				name:  Name(""),
+				email: Email{value: "validemail@gmail.com"},
+				password: Password{
+					nil,
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := CreateUser(tt.args.name, tt.args.email, tt.args.password)
+			_, err := CreateUser(tt.args.name, tt.args.email, tt.args.password)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateUser() error = %v, wantErr %v", err, tt.wantErr)
 				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("CreateUser() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -37,21 +78,26 @@ func TestCreateUser(t *testing.T) {
 
 func TestEmail_String(t *testing.T) {
 	type fields struct {
-		value string
+		value Email
 	}
+	successEmailString := "success@gmail.com"
+	successEmail, _ := NewEmail(successEmailString)
 	tests := []struct {
 		name   string
 		fields fields
 		want   string
 	}{
-		// TODO: Add test cases.
+		{
+			name: "success",
+			fields: fields{
+				successEmail,
+			},
+			want: successEmailString,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := Email{
-				value: tt.fields.value,
-			}
-			if got := e.String(); got != tt.want {
+			if got := tt.fields.value.String(); got != tt.want {
 				t.Errorf("String() = %v, want %v", got, tt.want)
 			}
 		})
@@ -67,7 +113,20 @@ func TestEmail_validate(t *testing.T) {
 		fields  fields
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "success",
+			fields: fields{
+				"goodsemail@gmail.com",
+			},
+			wantErr: false,
+		},
+		{
+			name: "empty value",
+			fields: fields{
+				"",
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -87,7 +146,11 @@ func TestName_String(t *testing.T) {
 		n    Name
 		want string
 	}{
-		// TODO: Add test cases.
+		{
+			name: "success",
+			n:    Name("user"),
+			want: "user",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -104,7 +167,16 @@ func TestName_validate(t *testing.T) {
 		n       Name
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:    "success",
+			n:       Name("user"),
+			wantErr: false,
+		},
+		{
+			name:    "empty name",
+			n:       Name(""),
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -125,7 +197,24 @@ func TestNewEmail(t *testing.T) {
 		want    Email
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "success",
+			args: args{
+				email: "successemail@gmail.com",
+			},
+			want: Email{
+				value: "successemail@gmail.com",
+			},
+			wantErr: false,
+		},
+		{
+			name: "empty email",
+			args: args{
+				email: "",
+			},
+			want:    Email{},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -151,7 +240,14 @@ func TestNewName(t *testing.T) {
 		want    Name
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "success",
+			args: args{
+				name: "name",
+			},
+			want:    Name("name"),
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -177,7 +273,14 @@ func TestNewPassword(t *testing.T) {
 		want    Password
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "success",
+			args: args{
+				passwordHash: []byte("password"),
+			},
+			want:    Password{[]byte("password")},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -203,13 +306,39 @@ func TestNewUser(t *testing.T) {
 		createdAt    time.Time
 		updatedAt    time.Time
 	}
+
+	timeNow := time.Now()
+	uuidNew := uuid.New()
+	emailNew := Email{value: "successemail@gmail.com"}
+	passwordNew := Password{[]byte("password")}
 	tests := []struct {
 		name    string
 		args    args
 		want    *User
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "success",
+			args: args{
+				id:           uuidNew,
+				name:         "Leonard",
+				email:        emailNew,
+				passwordHash: passwordNew,
+				isActive:     true,
+				createdAt:    timeNow,
+				updatedAt:    timeNow,
+			},
+			want: &User{
+				id:           uuidNew,
+				name:         "Leonard",
+				email:        emailNew,
+				passwordHash: passwordNew,
+				isActive:     true,
+				createdAt:    timeNow,
+				updatedAt:    timeNow,
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -225,29 +354,6 @@ func TestNewUser(t *testing.T) {
 	}
 }
 
-func TestPassword_String(t *testing.T) {
-	type fields struct {
-		hash []byte
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			p := Password{
-				hash: tt.fields.hash,
-			}
-			if got := p.String(); got != tt.want {
-				t.Errorf("String() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestPassword_validate(t *testing.T) {
 	type fields struct {
 		hash []byte
@@ -257,7 +363,27 @@ func TestPassword_validate(t *testing.T) {
 		fields  fields
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "success",
+			fields: fields{
+				hash: []byte("password"),
+			},
+			wantErr: false,
+		},
+		{
+			name: "nil hash",
+			fields: fields{
+				hash: nil,
+			},
+			wantErr: true,
+		},
+		{
+			name: "empty hash",
+			fields: fields{
+				hash: []byte(""),
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -281,12 +407,25 @@ func TestUser_CreatedAt(t *testing.T) {
 		createdAt    time.Time
 		updatedAt    time.Time
 	}
+	successCreatedTime := time.Now()
 	tests := []struct {
 		name   string
 		fields fields
 		want   time.Time
 	}{
-		// TODO: Add test cases.
+		{
+			name: "success",
+			fields: fields{
+				id:           uuid.New(),
+				name:         "Leonard",
+				email:        Email{value: "success@gmail.com"},
+				passwordHash: Password{[]byte("password")},
+				isActive:     true,
+				createdAt:    successCreatedTime,
+				updatedAt:    time.Now().UTC(),
+			},
+			want: successCreatedTime,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -321,7 +460,13 @@ func TestUser_Email(t *testing.T) {
 		fields fields
 		want   Email
 	}{
-		// TODO: Add test cases.
+		{
+			name: "success",
+			fields: fields{
+				email: Email{"success@email.com"},
+			},
+			want: Email{value: "success@email.com"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -351,12 +496,19 @@ func TestUser_ID(t *testing.T) {
 		createdAt    time.Time
 		updatedAt    time.Time
 	}
+	successUserID := uuid.New()
 	tests := []struct {
 		name   string
 		fields fields
 		want   uuid.UUID
 	}{
-		// TODO: Add test cases.
+		{
+			name: "success",
+			fields: fields{
+				id: successUserID,
+			},
+			want: successUserID,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -391,7 +543,13 @@ func TestUser_IsActive(t *testing.T) {
 		fields fields
 		want   bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "success",
+			fields: fields{
+				isActive: true,
+			},
+			want: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -426,7 +584,13 @@ func TestUser_Name(t *testing.T) {
 		fields fields
 		want   Name
 	}{
-		// TODO: Add test cases.
+		{
+			name: "success",
+			fields: fields{
+				name: "Leonard",
+			},
+			want: Name("Leonard"),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -461,7 +625,13 @@ func TestUser_Password(t *testing.T) {
 		fields fields
 		want   Password
 	}{
-		// TODO: Add test cases.
+		{
+			name: "success",
+			fields: fields{
+				passwordHash: Password{[]byte("password")},
+			},
+			want: Password{[]byte("password")},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -491,6 +661,7 @@ func TestUser_UpdateEmail(t *testing.T) {
 		createdAt    time.Time
 		updatedAt    time.Time
 	}
+
 	type args struct {
 		email Email
 	}
@@ -500,7 +671,48 @@ func TestUser_UpdateEmail(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "success",
+			fields: fields{
+				id:   uuid.New(),
+				name: "Leonard",
+				email: Email{
+					value: "successEmail@gmail.com",
+				},
+				passwordHash: Password{
+					[]byte("password"),
+				},
+				isActive:  true,
+				createdAt: time.Now(),
+				updatedAt: time.Now(),
+			},
+			args: args{
+				email: Email{
+					value: "NewEmail@gmail.com",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "error",
+			fields: fields{
+				id:   uuid.New(),
+				name: "Leonard",
+				email: Email{
+					value: "successEmail@gmail.com",
+				},
+				passwordHash: Password{
+					[]byte("password"),
+				},
+				isActive:  true,
+				createdAt: time.Now(),
+				updatedAt: time.Now(),
+			},
+			args: args{
+				email: Email{""},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -515,6 +727,12 @@ func TestUser_UpdateEmail(t *testing.T) {
 			}
 			if err := u.UpdateEmail(tt.args.email); (err != nil) != tt.wantErr {
 				t.Errorf("UpdateEmail() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if u.Email() == tt.fields.email && tt.wantErr == false {
+				t.Errorf("UpdateEmail() Email = %v, want %v", u.Email(), tt.fields.email)
+			}
+			if u.updatedAt == tt.fields.updatedAt && tt.wantErr == false {
+				t.Errorf("UpdateEmail() UpdatedAt = %v, want %v", u.UpdatedAt(), tt.fields.updatedAt)
 			}
 		})
 	}
@@ -539,7 +757,50 @@ func TestUser_UpdatePassword(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "success",
+			fields: fields{
+				id:   uuid.New(),
+				name: "Leonard",
+				email: Email{
+					value: "successEmail@gmail.com",
+				},
+				passwordHash: Password{
+					[]byte("password"),
+				},
+				isActive:  true,
+				createdAt: time.Now(),
+				updatedAt: time.Now(),
+			},
+			args: args{
+				password: Password{
+					[]byte("password"),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "error",
+			fields: fields{
+				id:   uuid.New(),
+				name: "Leonard",
+				email: Email{
+					value: "successEmail@gmail.com",
+				},
+				passwordHash: Password{
+					[]byte("password"),
+				},
+				isActive:  true,
+				createdAt: time.Now(),
+				updatedAt: time.Now(),
+			},
+			args: args{
+				password: Password{
+					[]byte(""),
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -569,12 +830,27 @@ func TestUser_UpdatedAt(t *testing.T) {
 		createdAt    time.Time
 		updatedAt    time.Time
 	}
+
+	successUpdatedAt := time.Now().UTC()
+
 	tests := []struct {
 		name   string
 		fields fields
 		want   time.Time
 	}{
-		// TODO: Add test cases.
+		{
+			name: "success",
+			fields: fields{
+				id:           uuid.New(),
+				name:         "Leonard",
+				email:        Email{value: "success@gmail.com"},
+				passwordHash: Password{[]byte("password")},
+				isActive:     true,
+				createdAt:    time.Now().UTC(),
+				updatedAt:    successUpdatedAt,
+			},
+			want: successUpdatedAt,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

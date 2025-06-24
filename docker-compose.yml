@@ -1,0 +1,36 @@
+services:
+  auth-service:
+    image: auth-service:v0.0.1
+    build:
+      context: .
+    ports:
+      - "40051:40051"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      goose:
+        condition: service_completed_successfully
+  postgres:
+    image: postgres:16-alpine3.22
+    ports:
+      - "5432:5432"
+    env_file:
+      - ./postgres.env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - db_data:/var/lib/postgresql/data
+  goose:
+    image: auth-service-migration
+    build:
+      context: ./migrations
+    depends_on:
+      postgres:
+          condition: service_healthy
+    env_file:
+      - ./prod.env
+volumes:
+  db_data:

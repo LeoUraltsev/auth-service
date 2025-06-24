@@ -25,22 +25,22 @@ type PostgresConfig struct {
 	DSN string `env:"POSTGRES_DSN" yaml:"dsn"`
 }
 
-func NewConfig(configPath string, dotEnvPath string) (Config, error) {
+func NewConfig(configPath string, dotEnvPath string) (*Config, error) {
 	if dotEnvPath != "" {
 		if err := godotenv.Load(dotEnvPath); err != nil {
-			return Config{}, err
+			return nil, err
 		}
 	}
 	var cfg Config
 	if _, err := os.Stat(configPath); err == nil {
 		if err = cleanenv.ReadConfig(configPath, &cfg); err != nil {
-			return Config{}, fmt.Errorf("read config: %w", err)
+			return nil, fmt.Errorf("read config: %w", err)
 		}
 	}
 
 	if err := cleanenv.ReadEnv(&cfg); err != nil {
-		return Config{}, fmt.Errorf("read env: %w", err)
+		return nil, fmt.Errorf("read env: %w", err)
 	}
 
-	return cfg, nil
+	return &cfg, nil
 }

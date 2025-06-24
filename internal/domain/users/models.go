@@ -10,7 +10,8 @@ var (
 	ErrEmailNotValid      = errors.New("email is not valid")
 	ErrEmailAlreadyExists = errors.New("email already exists")
 	ErrNameRequired       = errors.New("name is required")
-	ErrPasswordRequired   = errors.New("password is required")
+	ErrPasswordRequired   = errors.New("passwordHash is required")
+	ErrPasswordTooShort   = errors.New("password is too short")
 )
 
 type Name string
@@ -21,13 +22,13 @@ type Password struct {
 	hash []byte
 }
 type User struct {
-	id        uuid.UUID
-	name      Name
-	email     Email
-	password  Password
-	isActive  bool
-	createdAt time.Time
-	updatedAt time.Time
+	id           uuid.UUID
+	name         Name
+	email        Email
+	passwordHash Password
+	isActive     bool
+	createdAt    time.Time
+	updatedAt    time.Time
 }
 
 func NewUser(
@@ -49,13 +50,13 @@ func NewUser(
 		return nil, err
 	}
 	return &User{
-		id:        id,
-		name:      name,
-		email:     email,
-		password:  passwordHash,
-		isActive:  isActive,
-		createdAt: createdAt,
-		updatedAt: updatedAt,
+		id:           id,
+		name:         name,
+		email:        email,
+		passwordHash: passwordHash,
+		isActive:     isActive,
+		createdAt:    createdAt,
+		updatedAt:    updatedAt,
 	}, nil
 }
 
@@ -78,7 +79,7 @@ func (u *User) Email() Email {
 	return u.email
 }
 func (u *User) Password() Password {
-	return u.password
+	return u.passwordHash
 }
 func (u *User) IsActive() bool {
 	return u.isActive
@@ -105,15 +106,19 @@ func (u *User) UpdatePassword(password Password) error {
 	if err != nil {
 		return err
 	}
-	u.password = password
+	u.passwordHash = password
 	u.updatedAt = time.Now().UTC()
 	return nil
 }
 
-func NewEmail(email string) Email {
-	return Email{
+func NewEmail(email string) (Email, error) {
+	e := Email{
 		value: email,
 	}
+	if err := e.validate(); err != nil {
+		return Email{}, err
+	}
+	return e, nil
 }
 
 func (e Email) validate() error {
@@ -127,14 +132,16 @@ func (e Email) String() string {
 	return e.value
 }
 
-func NewPassword(passwordHash string) Password {
-	return Password{
-		hash: []byte(passwordHash),
+func NewPassword(passwordHash []byte) (Password, error) {
+	pwdHash := Password{
+		hash: passwordHash,
 	}
-}
 
-func (p Password) String() string {
-	return string(p.hash)
+	if err := pwdHash.validate(); err != nil {
+		return Password{}, err
+	}
+
+	return pwdHash, nil
 }
 
 func (p Password) validate() error {
@@ -144,8 +151,16 @@ func (p Password) validate() error {
 	return nil
 }
 
-func NewName(name string) Name {
-	return Name(name)
+func (p Password) Hash() []byte {
+	return p.hash
+}
+
+func NewName(name string) (Name, error) {
+	n := Name(name)
+	if err := n.validate(); err != nil {
+		return n, err
+	}
+	return n, nil
 }
 
 func (n Name) validate() error {
@@ -156,5 +171,11 @@ func (n Name) validate() error {
 }
 
 func (n Name) String() string {
-	return n.String()
+	return string(n)
+}
+
+func (u *User) UpdateName(name Name) error {
+	u.name = name
+	u.updatedAt = time.Now().UTC()
+	return nil
 }
