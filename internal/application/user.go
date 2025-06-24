@@ -8,6 +8,11 @@ import (
 	"strings"
 )
 
+/*
+todo: 1.для проверки существования и удаления нужно продумать транзакции так как используется несколько запросов к бд
+есть риск невалидных данных. нужно продумать слой где будут запускаться транзакции
+*/
+
 type UserServiceHandler struct {
 	userRepo       users.UserRepository
 	passwordHasher users.PasswordHasher
@@ -164,8 +169,25 @@ func (s *UserServiceHandler) UpdateUser(ctx context.Context, id uuid.UUID, name 
 }
 
 func (s *UserServiceHandler) DeleteUser(ctx context.Context, id uuid.UUID) error {
-	//TODO implement me
-	panic("implement me")
+	log := s.log.With(slog.String("id", id.String()))
+	log.Info("deleting user")
+	u, err := s.userRepo.Get(ctx, id)
+	if err != nil {
+		log.Warn("failed to get user", slog.String("id", id.String()))
+		return err
+	}
+	err = u.Delete()
+	if err != nil {
+		log.Warn("failed to delete user", slog.String("id", id.String()))
+		return err
+	}
+	err = s.userRepo.Save(ctx, u)
+	if err != nil {
+		log.Warn("failed to delete user", slog.String("id", id.String()))
+		return err
+	}
+	log.Info("user deleted")
+	return nil
 }
 
 func (s *UserServiceHandler) checkUniqueEmail(ctx context.Context, email users.Email) error {

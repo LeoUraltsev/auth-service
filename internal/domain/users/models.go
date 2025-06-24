@@ -84,6 +84,7 @@ func (u *User) Password() Password {
 func (u *User) IsActive() bool {
 	return u.isActive
 }
+
 func (u *User) CreatedAt() time.Time {
 	return u.createdAt
 }
@@ -107,6 +108,12 @@ func (u *User) UpdatePassword(password Password) error {
 		return err
 	}
 	u.passwordHash = password
+	u.updatedAt = time.Now().UTC()
+	return nil
+}
+
+func (u *User) Delete() error {
+	u.isActive = false
 	u.updatedAt = time.Now().UTC()
 	return nil
 }
