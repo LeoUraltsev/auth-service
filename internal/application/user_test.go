@@ -11,6 +11,12 @@ import (
 	"testing"
 )
 
+// todo: все тесты, cover >80%
+//go test ./internal/application/... -coverprofile=coverage.out
+//go tool cover -html=coverage.out
+
+var log = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
+
 func TestUserServiceHandler_CreateUser(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
@@ -18,7 +24,6 @@ func TestUserServiceHandler_CreateUser(t *testing.T) {
 
 	repository := mockusers.NewMockUserRepository(ctrl)
 	passwordHasher := mockusers.NewMockPasswordHasher(ctrl)
-	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 
 	type fields struct {
 		save         *gomock.Call
@@ -81,7 +86,40 @@ func TestUserServiceHandler_checkUniqueEmail(t *testing.T) {
 		AnyTimes()
 	email, err := users.NewEmail("email@gmail.com")
 	assert.NoError(t, err, "should not error")
-	service := NewUserService(repository, nil, nil)
+	service := NewUserService(repository, nil, log)
 	err = service.checkUniqueEmail(context.Background(), email)
+	assert.NoError(t, err, "should not error")
+}
+
+func TestUserServiceHandler_checkUniqueEmail_failed(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	repository := mockusers.NewMockUserRepository(ctrl)
+	repository.EXPECT().
+		ExistsByEmail(context.Background(), gomock.Any()).
+		Return(true, nil).
+		AnyTimes()
+	email, err := users.NewEmail("email@gmail.com")
+	assert.NoError(t, err, "should not error")
+	service := NewUserService(repository, nil, log)
+	err = service.checkUniqueEmail(context.Background(), email)
+	assert.Error(t, err, "should error")
+}
+
+func TestUserServiceHandler_GetUser(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	email, _ := users.NewEmail("success@email.ru")
+	pass, _ := users.NewPassword([]byte("hashpassword"))
+	user, err := users.CreateUser("name", email, pass)
+	assert.NoError(t, err, "should not error")
+
+	repository := mockusers.NewMockUserRepository(ctrl)
+	repository.EXPECT().
+		Get(context.Background(), gomock.Any()).
+		Return(user, nil)
+
+	service := NewUserService(repository, nil, log)
+
+	u, err := service.GetUser(context.Background(), user.ID())
+	assert.Equal(t, user, u, "should return user")
 	assert.NoError(t, err, "should not error")
 }
