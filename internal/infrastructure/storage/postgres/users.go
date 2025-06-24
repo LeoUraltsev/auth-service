@@ -15,7 +15,7 @@ type UsersStorage struct {
 }
 
 type User struct {
-	id           uuid.UUID
+	id           string
 	name         string
 	email        string
 	passwordHash []byte
@@ -45,13 +45,13 @@ func (u *UsersStorage) Save(ctx context.Context, user *users.User) error {
 		`
 	log.Debug("query to save user", slog.String("query", query))
 
-	_, err := u.db.Pool.Exec(ctx, query, &us.name, &us.email, &us.passwordHash, &us.isActive, &us.createdAt, &us.updatedAt)
+	_, err := u.db.Pool.Exec(ctx, query, &us.id, &us.name, &us.email, &us.passwordHash, &us.isActive, &us.createdAt, &us.updatedAt)
 	if err != nil {
 		//todo: доп проверка на ошибку уникальности
 		log.Error("failed to save user to db ", slog.String("error", err.Error()))
 		return err
 	}
-	log.Info("user saved successfully", slog.String("id", us.id.String()))
+	log.Info("user saved successfully", slog.String("id", us.id))
 	return nil
 }
 
@@ -92,7 +92,7 @@ func (u *UsersStorage) GetAll(ctx context.Context) ([]*users.User, error) {
 		log.Error("failed to get all users", slog.String("error", err.Error()))
 		return nil, err
 	}
-	var usersList []User
+	usersList := make([]User, 0)
 	for rows.Next() {
 		var user User
 		err = rows.Scan(
@@ -110,14 +110,16 @@ func (u *UsersStorage) GetAll(ctx context.Context) ([]*users.User, error) {
 		}
 		usersList = append(usersList, user)
 	}
-	dUsers := make([]*users.User, len(usersList))
+	dUsers := make([]*users.User, 0, len(usersList))
 	for _, user := range usersList {
 		mMser, err := mapperToDomain(user)
 		if err != nil {
 			log.Error("failed to convert user to domain", slog.String("error", err.Error()))
+			continue
 		}
 		dUsers = append(dUsers, mMser)
 	}
+	log.Debug("len result", slog.Int("len", len(dUsers)))
 	return dUsers, nil
 }
 
@@ -137,7 +139,7 @@ func (u *UsersStorage) ExistsByEmail(ctx context.Context, email users.Email) (bo
 
 func mapperToStorage(u *users.User) User {
 	return User{
-		id:           u.ID(),
+		id:           u.ID().String(),
 		name:         u.Name().String(),
 		email:        u.Email().String(),
 		passwordHash: u.Password().Hash(),
@@ -148,6 +150,7 @@ func mapperToStorage(u *users.User) User {
 }
 
 func mapperToDomain(u User) (*users.User, error) {
+	id := uuid.MustParse(u.id)
 	name, err := users.NewName(u.name)
 	if err != nil {
 		return nil, err
@@ -161,7 +164,7 @@ func mapperToDomain(u User) (*users.User, error) {
 		return nil, err
 	}
 	user, err := users.NewUser(
-		u.id,
+		id,
 		name,
 		email,
 		passwordHash,

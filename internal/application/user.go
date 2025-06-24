@@ -11,6 +11,8 @@ import (
 /*
 todo: 1.для проверки существования и удаления нужно продумать транзакции так как используется несколько запросов к бд
 есть риск невалидных данных. нужно продумать слой где будут запускаться транзакции
+
+todo: 2. обработка ошибок, domain слоя
 */
 
 type UserServiceHandler struct {
@@ -65,7 +67,7 @@ func (s *UserServiceHandler) CreateUser(ctx context.Context, name string, email 
 	}
 	user, err := users.CreateUser(n, e, p)
 	if err != nil {
-		log.Warn("failed to create user", slog.Any("user", user), slog.String("error", err.Error()))
+		log.Warn("failed to create user", slog.Any("user", &user), slog.String("error", err.Error()))
 		return uuid.Nil, err
 	}
 
@@ -98,7 +100,7 @@ func (s *UserServiceHandler) GetListUsers(ctx context.Context) ([]*users.User, e
 		log.Warn("failed to get all users", slog.String("error", err.Error()))
 		return nil, err
 	}
-	log.Info("success getting all users")
+	log.Info("success getting all users", slog.Any("users", &u))
 	return u, nil
 }
 

@@ -81,9 +81,9 @@ func (a *userGRPCApi) GetListUsers(ctx context.Context, request *auth1.GetListUs
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to get users")
 	}
-
-	res := make([]*auth1.User, len(usrs))
+	res := make([]*auth1.User, 0, len(usrs))
 	for _, usr := range usrs {
+		a.log.Debug("got user", slog.Any("user", usr.ID()))
 		res = append(res, &auth1.User{
 			Id:        usr.ID().String(),
 			Name:      usr.Name().String(),
