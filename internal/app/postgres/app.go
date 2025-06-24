@@ -53,3 +53,9 @@ func NewPostgresPool(ctx context.Context, log *slog.Logger, connString string) (
 		log:  log,
 	}, nil
 }
+
+func (p *Postgres) Close() {
+	p.log.Info("shutting down postgres")
+	p.Pool.Close()
+	p.log.Info("postgres pool closed")
+}

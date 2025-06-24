@@ -38,3 +38,9 @@ func (a *App) Start() error {
 
 	return nil
 }
+
+func (a *App) Stop() {
+	a.log.Info("shutting down grpc server")
+	a.gRPC.GracefulStop()
+	a.log.Info("grpc server stopped")
+}

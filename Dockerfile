@@ -18,5 +18,5 @@ COPY --from=buider /app/server .
 COPY --from=buider /app/prod.env .
 
 EXPOSE 40051
-
+STOPSIGNAL SIGTERM
 CMD ["./server"]

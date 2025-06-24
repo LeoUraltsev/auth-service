@@ -9,6 +9,9 @@ import (
 	"github.com/LeoUraltsev/auth-service/internal/infrastructure/hasher"
 	pgUserStorage "github.com/LeoUraltsev/auth-service/internal/infrastructure/storage/postgres"
 	"log/slog"
+	"os/signal"
+	"sync"
+	"syscall"
 )
 
 type App struct {
@@ -26,7 +29,10 @@ func NewApp(log *slog.Logger, cfg *config.Config) *App {
 func (a *App) Run() error {
 	log := a.log
 	log.Info("starting app")
-	ctx := context.TODO()
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
 	pg, err := postgres.NewPostgresPool(ctx, log, a.cfg.Postgres.DSN)
 	if err != nil {
 		log.Info("failed to connect database")
@@ -40,9 +46,36 @@ func (a *App) Run() error {
 
 	rpc := grpc.NewApp(userService, log, a.cfg.GRPC.Address)
 
-	err = rpc.Start()
-	if err != nil {
-		return err
+	chErrRpc := make(chan error)
+	go func() {
+		defer close(chErrRpc)
+		err = rpc.Start()
+		if err != nil {
+			chErrRpc <- err
+		}
+	}()
+
+	wg := &sync.WaitGroup{}
+
+	select {
+	case <-ctx.Done():
+		log.Info("shutting down app")
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			rpc.Stop()
+		}()
+		go func() {
+			defer wg.Done()
+			pg.Close()
+		}()
+		wg.Wait()
+		log.Info("app stopped")
+	case err := <-chErrRpc:
+		if err != nil {
+			pg.Close()
+			return err
+		}
 	}
 
 	return nil
