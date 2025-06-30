@@ -12,6 +12,7 @@ var (
 	ErrNameRequired       = errors.New("name is required")
 	ErrPasswordRequired   = errors.New("passwordHash is required")
 	ErrPasswordTooShort   = errors.New("password is too short")
+	ErrInvalidCredentials = errors.New("invalid credentials")
 )
 
 type Name string

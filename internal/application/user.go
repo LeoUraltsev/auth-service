@@ -16,20 +16,26 @@ todo: 2. обработка ошибок, domain слоя
 */
 
 type UserServiceHandler struct {
-	userRepo       users.UserRepository
-	passwordHasher users.PasswordHasher
-	log            *slog.Logger
+	userRepo         users.UserRepository
+	passwordHasher   users.PasswordHasher
+	passwordVerifier users.PasswordVerifier
+	tokenGen         users.TokenGenerator
+	log              *slog.Logger
 }
 
 func NewUserService(
 	userRepo users.UserRepository,
 	passwordHasher users.PasswordHasher,
+	passwordVerifier users.PasswordVerifier,
+	tokenGen users.TokenGenerator,
 	log *slog.Logger,
 ) *UserServiceHandler {
 	return &UserServiceHandler{
-		userRepo:       userRepo,
-		passwordHasher: passwordHasher,
-		log:            log,
+		userRepo:         userRepo,
+		passwordHasher:   passwordHasher,
+		log:              log,
+		passwordVerifier: passwordVerifier,
+		tokenGen:         tokenGen,
 	}
 }
 
@@ -190,6 +196,35 @@ func (s *UserServiceHandler) DeleteUser(ctx context.Context, id uuid.UUID) error
 	}
 	log.Info("user deleted")
 	return nil
+}
+
+func (s *UserServiceHandler) Login(ctx context.Context, email string, password string) (string, error) {
+	e, err := users.NewEmail(email)
+	if err != nil {
+		return "", err
+	}
+	p, err := users.NewPassword([]byte(password))
+	if err != nil {
+		return "", err
+	}
+
+	usr, err := s.userRepo.GetByEmail(ctx, e)
+	if err != nil {
+		return "", err
+	}
+
+	verify, err := s.passwordVerifier.Verify(usr.Password().Hash(), p.Hash())
+	if err != nil {
+		return "", err
+	}
+	if !verify {
+		return "", users.ErrInvalidCredentials
+	}
+	token, err := s.tokenGen.GenerateToken(usr.ID())
+	if err != nil {
+		return "", err
+	}
+	return token, nil
 }
 
 func (s *UserServiceHandler) checkUniqueEmail(ctx context.Context, email users.Email) error {

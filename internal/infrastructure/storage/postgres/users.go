@@ -178,3 +178,18 @@ func mapperToDomain(u User) (*users.User, error) {
 	return user, nil
 
 }
+
+func (u *UsersStorage) GetByEmail(ctx context.Context, email users.Email) (*users.User, error) {
+	log := u.log
+	log.Info("attempting to get user by email", slog.String("email", email.String()))
+	query := `SELECT id, name, email, password_hash, is_active, created_at, updated_at FROM users where email = $1;`
+	var usr User
+	err := u.db.Pool.QueryRow(ctx, query, email).Scan(&usr.id, &usr.name, &usr.email, &usr.passwordHash, &usr.isActive, &usr.createdAt, &usr.updatedAt)
+	if err != nil {
+		log.Error("failed to get user by email", slog.String("email", email.String()))
+		return nil, err
+	}
+
+	log.Info("successful getting user by email", slog.String("email", email.String()))
+	return mapperToDomain(usr)
+}
