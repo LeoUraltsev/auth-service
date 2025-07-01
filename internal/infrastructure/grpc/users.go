@@ -124,3 +124,15 @@ func (a *userGRPCApi) DeleteUser(ctx context.Context, request *auth1.DeleteUserR
 	}
 	return &auth1.DeleteUserResponse{Success: true}, nil
 }
+
+func (a *userGRPCApi) Login(ctx context.Context, request *auth1.LoginRequest) (*auth1.LoginResponse, error) {
+	log := a.log.With("email", request.Email)
+	log.Info("logging in")
+	token, err := a.service.Login(ctx, request.Email, request.Password)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to login")
+	}
+	return &auth1.LoginResponse{Token: token}, nil
+}
+
+func (a *userGRPCApi) mustEmbedUnimplementedUserServiceServer() {}

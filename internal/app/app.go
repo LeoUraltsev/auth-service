@@ -7,6 +7,7 @@ import (
 	"github.com/LeoUraltsev/auth-service/internal/application"
 	"github.com/LeoUraltsev/auth-service/internal/config"
 	"github.com/LeoUraltsev/auth-service/internal/infrastructure/hasher"
+	"github.com/LeoUraltsev/auth-service/internal/infrastructure/jwt"
 	pgUserStorage "github.com/LeoUraltsev/auth-service/internal/infrastructure/storage/postgres"
 	"log/slog"
 	"os/signal"
@@ -41,8 +42,9 @@ func (a *App) Run() error {
 
 	userStorage := pgUserStorage.NewUsersStorage(pg, log)
 	hash := hasher.NewHasher()
+	tg := jwt.NewToken(log, a.cfg)
 
-	userService := application.NewUserService(userStorage, hash, log)
+	userService := application.NewUserService(userStorage, hash, hash, tg, log)
 
 	rpc := grpc.NewApp(userService, log, a.cfg.GRPC.Address)
 
