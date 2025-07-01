@@ -12,7 +12,10 @@ import (
 	"strings"
 )
 
-var KeyCtxRequestID = "request_id"
+var (
+	KeyCtxRequestID = "request_id"
+	KeyCtxUserID    = "user_id"
+)
 
 type TokenVerifier interface {
 	ValidateToken(token string) (*jwt.AuthClaims, error)
@@ -83,11 +86,13 @@ func (i *Interceptors) Auth(
 
 	token := strings.TrimPrefix(a[0], "Bearer ")
 
-	_, err := i.tokenVerifier.ValidateToken(token)
+	claims, err := i.tokenVerifier.ValidateToken(token)
 	if err != nil {
 		log.Warn("invalid token", slog.String("token", token), slog.String("error", err.Error()))
 		return nil, status.Error(codes.Unauthenticated, "no token found")
 	}
+
+	ctx = context.WithValue(ctx, KeyCtxUserID, claims.UserID)
 
 	return handler(ctx, req)
 }

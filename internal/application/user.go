@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"github.com/LeoUraltsev/auth-service/internal/domain/users"
+	"github.com/LeoUraltsev/auth-service/internal/helper/logger"
 	"github.com/google/uuid"
 	"log/slog"
 	"strings"
@@ -40,7 +41,7 @@ func NewUserService(
 }
 
 func (s *UserServiceHandler) CreateUser(ctx context.Context, name string, email string, password string) (uuid.UUID, error) {
-	log := s.log.With(slog.String("email", email))
+	log := logger.LogWithContext(ctx, s.log)
 	log.Info("creating user")
 
 	n, err := users.NewName(name)
@@ -86,7 +87,7 @@ func (s *UserServiceHandler) CreateUser(ctx context.Context, name string, email 
 }
 
 func (s *UserServiceHandler) GetUser(ctx context.Context, id uuid.UUID) (*users.User, error) {
-	log := s.log.With(slog.String("id", id.String()))
+	log := logger.LogWithContext(ctx, s.log)
 	log.Info("getting user")
 	user, err := s.userRepo.Get(ctx, id)
 	if err != nil {
@@ -98,7 +99,7 @@ func (s *UserServiceHandler) GetUser(ctx context.Context, id uuid.UUID) (*users.
 }
 
 func (s *UserServiceHandler) GetListUsers(ctx context.Context) ([]*users.User, error) {
-	log := s.log
+	log := logger.LogWithContext(ctx, s.log)
 
 	log.Info("getting all users")
 	u, err := s.userRepo.GetAll(ctx)
@@ -111,7 +112,7 @@ func (s *UserServiceHandler) GetListUsers(ctx context.Context) ([]*users.User, e
 }
 
 func (s *UserServiceHandler) UpdateUser(ctx context.Context, id uuid.UUID, name string, email string, password string) error {
-	log := s.log
+	log := logger.LogWithContext(ctx, s.log)
 	log.Info("updating user")
 
 	log.Info("getting user")
@@ -177,7 +178,7 @@ func (s *UserServiceHandler) UpdateUser(ctx context.Context, id uuid.UUID, name 
 }
 
 func (s *UserServiceHandler) DeleteUser(ctx context.Context, id uuid.UUID) error {
-	log := s.log.With(slog.String("id", id.String()))
+	log := logger.LogWithContext(ctx, s.log)
 	log.Info("deleting user")
 	u, err := s.userRepo.Get(ctx, id)
 	if err != nil {

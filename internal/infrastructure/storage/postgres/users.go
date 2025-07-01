@@ -4,6 +4,7 @@ import (
 	"context"
 	pg "github.com/LeoUraltsev/auth-service/internal/app/postgres"
 	"github.com/LeoUraltsev/auth-service/internal/domain/users"
+	"github.com/LeoUraltsev/auth-service/internal/helper/logger"
 	"github.com/google/uuid"
 	"log/slog"
 	"time"
@@ -31,7 +32,7 @@ func NewUsersStorage(db *pg.Postgres, log *slog.Logger) *UsersStorage {
 // Save метод для добавления новых пользователей, обновление существующих, проставить пользователю статус удаленного
 // возвращает nil в случае успешного добавления
 func (u *UsersStorage) Save(ctx context.Context, user *users.User) error {
-	log := u.log
+	log := logger.LogWithContext(ctx, u.log)
 	log.Info("saving user to postgres")
 	us := mapperToStorage(user)
 
@@ -58,7 +59,7 @@ func (u *UsersStorage) Save(ctx context.Context, user *users.User) error {
 //todo: пагинация, возможно сортировка
 
 func (u *UsersStorage) Get(ctx context.Context, id uuid.UUID) (*users.User, error) {
-	log := u.log
+	log := logger.LogWithContext(ctx, u.log)
 	query := `SELECT id, name, email, password_hash, is_active, created_at, updated_at FROM users WHERE id = $1;`
 	var user User
 	err := u.db.Pool.QueryRow(ctx, query, id).Scan(
@@ -85,7 +86,7 @@ func (u *UsersStorage) Get(ctx context.Context, id uuid.UUID) (*users.User, erro
 }
 
 func (u *UsersStorage) GetAll(ctx context.Context) ([]*users.User, error) {
-	log := u.log
+	log := logger.LogWithContext(ctx, u.log)
 	query := `SELECT id, name, email, password_hash, is_active, created_at, updated_at FROM users;`
 	rows, err := u.db.Pool.Query(ctx, query)
 	if err != nil {
@@ -124,7 +125,7 @@ func (u *UsersStorage) GetAll(ctx context.Context) ([]*users.User, error) {
 }
 
 func (u *UsersStorage) ExistsByEmail(ctx context.Context, email users.Email) (bool, error) {
-	log := u.log
+	log := logger.LogWithContext(ctx, u.log)
 	query := `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND is_active = TRUE);`
 	log.Debug("query to check if user exists", slog.String("query", query))
 	var exists bool
@@ -135,6 +136,21 @@ func (u *UsersStorage) ExistsByEmail(ctx context.Context, email users.Email) (bo
 	}
 	log.Debug("exists user", slog.Bool("res", exists))
 	return exists, nil
+}
+
+func (u *UsersStorage) GetByEmail(ctx context.Context, email users.Email) (*users.User, error) {
+	log := logger.LogWithContext(ctx, u.log)
+	log.Info("attempting to get user by email", slog.String("email", email.String()))
+	query := `SELECT id, name, email, password_hash, is_active, created_at, updated_at FROM users where email = $1;`
+	var usr User
+	err := u.db.Pool.QueryRow(ctx, query, email).Scan(&usr.id, &usr.name, &usr.email, &usr.passwordHash, &usr.isActive, &usr.createdAt, &usr.updatedAt)
+	if err != nil {
+		log.Error("failed to get user by email", slog.String("email", email.String()))
+		return nil, err
+	}
+
+	log.Info("successful getting user by email", slog.String("email", email.String()))
+	return mapperToDomain(usr)
 }
 
 func mapperToStorage(u *users.User) User {
@@ -177,19 +193,4 @@ func mapperToDomain(u User) (*users.User, error) {
 	}
 	return user, nil
 
-}
-
-func (u *UsersStorage) GetByEmail(ctx context.Context, email users.Email) (*users.User, error) {
-	log := u.log
-	log.Info("attempting to get user by email", slog.String("email", email.String()))
-	query := `SELECT id, name, email, password_hash, is_active, created_at, updated_at FROM users where email = $1;`
-	var usr User
-	err := u.db.Pool.QueryRow(ctx, query, email).Scan(&usr.id, &usr.name, &usr.email, &usr.passwordHash, &usr.isActive, &usr.createdAt, &usr.updatedAt)
-	if err != nil {
-		log.Error("failed to get user by email", slog.String("email", email.String()))
-		return nil, err
-	}
-
-	log.Info("successful getting user by email", slog.String("email", email.String()))
-	return mapperToDomain(usr)
 }
