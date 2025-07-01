@@ -96,103 +96,6 @@ func (mr *MockPasswordVerifierMockRecorder) Verify(passwordHash, password any) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Verify", reflect.TypeOf((*MockPasswordVerifier)(nil).Verify), passwordHash, password)
 }
 
-// MockUserServiceHandler is a mock of UserServiceHandler interface.
-type MockUserServiceHandler struct {
-	ctrl     *gomock.Controller
-	recorder *MockUserServiceHandlerMockRecorder
-	isgomock struct{}
-}
-
-// MockUserServiceHandlerMockRecorder is the mock recorder for MockUserServiceHandler.
-type MockUserServiceHandlerMockRecorder struct {
-	mock *MockUserServiceHandler
-}
-
-// NewMockUserServiceHandler creates a new mock instance.
-func NewMockUserServiceHandler(ctrl *gomock.Controller) *MockUserServiceHandler {
-	mock := &MockUserServiceHandler{ctrl: ctrl}
-	mock.recorder = &MockUserServiceHandlerMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockUserServiceHandler) EXPECT() *MockUserServiceHandlerMockRecorder {
-	return m.recorder
-}
-
-// CreateUser mocks base method.
-func (m *MockUserServiceHandler) CreateUser(ctx context.Context, name, email, password string) (uuid.UUID, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateUser", ctx, name, email, password)
-	ret0, _ := ret[0].(uuid.UUID)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateUser indicates an expected call of CreateUser.
-func (mr *MockUserServiceHandlerMockRecorder) CreateUser(ctx, name, email, password any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockUserServiceHandler)(nil).CreateUser), ctx, name, email, password)
-}
-
-// DeleteUser mocks base method.
-func (m *MockUserServiceHandler) DeleteUser(ctx context.Context, id uuid.UUID) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteUser", ctx, id)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteUser indicates an expected call of DeleteUser.
-func (mr *MockUserServiceHandlerMockRecorder) DeleteUser(ctx, id any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUser", reflect.TypeOf((*MockUserServiceHandler)(nil).DeleteUser), ctx, id)
-}
-
-// GetListUsers mocks base method.
-func (m *MockUserServiceHandler) GetListUsers(ctx context.Context) ([]*users.User, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetListUsers", ctx)
-	ret0, _ := ret[0].([]*users.User)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetListUsers indicates an expected call of GetListUsers.
-func (mr *MockUserServiceHandlerMockRecorder) GetListUsers(ctx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetListUsers", reflect.TypeOf((*MockUserServiceHandler)(nil).GetListUsers), ctx)
-}
-
-// GetUser mocks base method.
-func (m *MockUserServiceHandler) GetUser(ctx context.Context, id uuid.UUID) (*users.User, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUser", ctx, id)
-	ret0, _ := ret[0].(*users.User)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetUser indicates an expected call of GetUser.
-func (mr *MockUserServiceHandlerMockRecorder) GetUser(ctx, id any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockUserServiceHandler)(nil).GetUser), ctx, id)
-}
-
-// UpdateUser mocks base method.
-func (m *MockUserServiceHandler) UpdateUser(ctx context.Context, id uuid.UUID, name, email, password string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateUser", ctx, id, name, email, password)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateUser indicates an expected call of UpdateUser.
-func (mr *MockUserServiceHandlerMockRecorder) UpdateUser(ctx, id, name, email, password any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUser", reflect.TypeOf((*MockUserServiceHandler)(nil).UpdateUser), ctx, id, name, email, password)
-}
-
 // MockUserRepository is a mock of UserRepository interface.
 type MockUserRepository struct {
 	ctrl     *gomock.Controller
@@ -262,6 +165,21 @@ func (mr *MockUserRepositoryMockRecorder) GetAll(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockUserRepository)(nil).GetAll), ctx)
 }
 
+// GetByEmail mocks base method.
+func (m *MockUserRepository) GetByEmail(ctx context.Context, email users.Email) (*users.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByEmail", ctx, email)
+	ret0, _ := ret[0].(*users.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByEmail indicates an expected call of GetByEmail.
+func (mr *MockUserRepositoryMockRecorder) GetByEmail(ctx, email any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByEmail", reflect.TypeOf((*MockUserRepository)(nil).GetByEmail), ctx, email)
+}
+
 // Save mocks base method.
 func (m *MockUserRepository) Save(ctx context.Context, user *users.User) error {
 	m.ctrl.T.Helper()
@@ -274,4 +192,43 @@ func (m *MockUserRepository) Save(ctx context.Context, user *users.User) error {
 func (mr *MockUserRepositoryMockRecorder) Save(ctx, user any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockUserRepository)(nil).Save), ctx, user)
+}
+
+// MockTokenGenerator is a mock of TokenGenerator interface.
+type MockTokenGenerator struct {
+	ctrl     *gomock.Controller
+	recorder *MockTokenGeneratorMockRecorder
+	isgomock struct{}
+}
+
+// MockTokenGeneratorMockRecorder is the mock recorder for MockTokenGenerator.
+type MockTokenGeneratorMockRecorder struct {
+	mock *MockTokenGenerator
+}
+
+// NewMockTokenGenerator creates a new mock instance.
+func NewMockTokenGenerator(ctrl *gomock.Controller) *MockTokenGenerator {
+	mock := &MockTokenGenerator{ctrl: ctrl}
+	mock.recorder = &MockTokenGeneratorMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockTokenGenerator) EXPECT() *MockTokenGeneratorMockRecorder {
+	return m.recorder
+}
+
+// GenerateToken mocks base method.
+func (m *MockTokenGenerator) GenerateToken(userID uuid.UUID) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GenerateToken", userID)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GenerateToken indicates an expected call of GenerateToken.
+func (mr *MockTokenGeneratorMockRecorder) GenerateToken(userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateToken", reflect.TypeOf((*MockTokenGenerator)(nil).GenerateToken), userID)
 }

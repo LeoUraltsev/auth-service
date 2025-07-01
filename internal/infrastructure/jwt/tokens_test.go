@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+//todo: отдельный логгер заглушка для тестов
+
 func TestToken_GenerateToken(t *testing.T) {
 	log, _ := logger.NewLogger("development")
 	cfg := &config.Config{
@@ -25,8 +27,8 @@ func TestToken_GenerateToken(t *testing.T) {
 	claims, err := tkn.ValidateToken(token)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, claims)
-	token1 := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTEzNzkxMTQsInVzZXJfaWQiOiJmMTkzMzY1Mi0zOTcyLTQ4ZDQtYjhlNy1hODM2YjZjNmE4NDkifQ.m00yEpITDpyPt8d4ksfcImo6Vm3oH_BbPlA0A2idZyA"
-	_, err = tkn.ValidateToken(token1)
-	assert.NoError(t, err)
+	tokenExp := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTEzNzkxMTQsInVzZXJfaWQiOiJmMTkzMzY1Mi0zOTcyLTQ4ZDQtYjhlNy1hODM2YjZjNmE4NDkifQ.m00yEpITDpyPt8d4ksfcImo6Vm3oH_BbPlA0A2idZyA"
+	_, err = tkn.ValidateToken(tokenExp)
+	assert.Error(t, err)
 
 }

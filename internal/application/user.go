@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"errors"
 	"github.com/LeoUraltsev/auth-service/internal/domain/users"
 	"github.com/LeoUraltsev/auth-service/internal/helper/logger"
 	"github.com/google/uuid"
@@ -97,6 +98,7 @@ func (s *UserServiceHandler) CreateUser(ctx context.Context, name string, email 
 	return user.ID(), nil
 }
 
+// todo: разделить на уровне domain получаешь своего пользователя или собеседника
 func (s *UserServiceHandler) GetUser(ctx context.Context, id uuid.UUID) (*users.User, error) {
 	log := logger.LogWithContext(ctx, s.log)
 	log.Info("getting user")
@@ -126,11 +128,27 @@ func (s *UserServiceHandler) UpdateUser(ctx context.Context, id uuid.UUID, name 
 	log := logger.LogWithContext(ctx, s.log)
 	log.Info("updating user")
 
+	ctxUserID, err := userIDFromContext(ctx)
+	if err != nil {
+		log.Error("user id missing in context", slog.String("id", id.String()))
+		return err
+	}
+
+	if ctxUserID != id {
+		log.Error("user id mismatch token user", slog.String("id", id.String()))
+		return errors.New("user id mismatch token user")
+	}
+
 	log.Info("getting user")
 	u, err := s.userRepo.Get(ctx, id)
 	if err != nil {
 		log.Warn("failed to get user", slog.String("id", id.String()))
 		return err
+	}
+
+	if !u.IsActive() {
+		log.Warn("user isnt active", slog.String("id", id.String()))
+		return errors.New("user isnt active")
 	}
 
 	if name != "" {
@@ -191,11 +209,29 @@ func (s *UserServiceHandler) UpdateUser(ctx context.Context, id uuid.UUID, name 
 func (s *UserServiceHandler) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	log := logger.LogWithContext(ctx, s.log)
 	log.Info("deleting user")
+
+	ctxUserID, err := userIDFromContext(ctx)
+	if err != nil {
+		log.Error("user id missing in context", slog.String("id", id.String()))
+		return err
+	}
+
+	if ctxUserID != id {
+		log.Error("user id mismatch token user", slog.String("id", id.String()))
+		return errors.New("user id mismatch token user")
+	}
+
 	u, err := s.userRepo.Get(ctx, id)
 	if err != nil {
 		log.Warn("failed to get user", slog.String("id", id.String()))
 		return err
 	}
+
+	if !u.IsActive() {
+		log.Warn("user isnt active", slog.String("id", id.String()))
+		return errors.New("user isnt active")
+	}
+
 	err = u.Delete()
 	if err != nil {
 		log.Warn("failed to delete user", slog.String("id", id.String()))
@@ -252,4 +288,13 @@ func (s *UserServiceHandler) checkUniqueEmail(ctx context.Context, email users.E
 
 func (s *UserServiceHandler) hashPassword(password []byte) ([]byte, error) {
 	return s.passwordHasher.Hash(password)
+}
+
+// todo: возможно нужен пакет для хранения констант-ключей
+func userIDFromContext(ctx context.Context) (uuid.UUID, error) {
+	u, ok := ctx.Value("user_id").(uuid.UUID)
+	if !ok {
+		return uuid.Nil, errors.New("user id not found in context")
+	}
+	return u, nil
 }
