@@ -14,7 +14,18 @@ todo: 1.для проверки существования и удаления �
 есть риск невалидных данных. нужно продумать слой где будут запускаться транзакции
 
 todo: 2. обработка ошибок, domain слоя
+
+todo: 3. нужна обработка от возможности изменения и удаления чужих данных (сейчас по любому токену можно изменить любого юзера)
 */
+
+type UserService interface {
+	CreateUser(ctx context.Context, name string, email string, password string) (uuid.UUID, error)
+	GetUser(ctx context.Context, id uuid.UUID) (*users.User, error)
+	GetListUsers(ctx context.Context) ([]*users.User, error)
+	UpdateUser(ctx context.Context, id uuid.UUID, name string, email string, password string) error
+	DeleteUser(ctx context.Context, id uuid.UUID) error
+	Login(ctx context.Context, email string, password string) (string, error)
+}
 
 type UserServiceHandler struct {
 	userRepo         users.UserRepository

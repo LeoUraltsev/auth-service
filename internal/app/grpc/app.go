@@ -1,7 +1,7 @@
 package grpc
 
 import (
-	"github.com/LeoUraltsev/auth-service/internal/domain/users"
+	"github.com/LeoUraltsev/auth-service/internal/application"
 	userGrpc "github.com/LeoUraltsev/auth-service/internal/infrastructure/grpc"
 	"github.com/LeoUraltsev/auth-service/internal/infrastructure/interceptors"
 	"google.golang.org/grpc"
@@ -16,7 +16,7 @@ type App struct {
 	address       string
 }
 
-func NewApp(service users.UserServiceHandler, log *slog.Logger, tokenVerifier interceptors.TokenVerifier, address string) *App {
+func NewApp(service application.UserService, log *slog.Logger, tokenVerifier interceptors.TokenVerifier, address string) *App {
 
 	i := interceptors.New(log, tokenVerifier)
 

@@ -2,7 +2,7 @@ package grpc
 
 import (
 	"context"
-	"github.com/LeoUraltsev/auth-service/internal/domain/users"
+	"github.com/LeoUraltsev/auth-service/internal/application"
 	"github.com/LeoUraltsev/auth-service/internal/helper/logger"
 	auth1 "github.com/LeoUraltsev/proto/gen/go/auth"
 	"github.com/google/uuid"
@@ -18,11 +18,11 @@ import (
 
 type userGRPCApi struct {
 	auth1.UnimplementedUserServiceServer
-	service users.UserServiceHandler
+	service application.UserService
 	log     *slog.Logger
 }
 
-func Register(gRPC *grpc.Server, service users.UserServiceHandler, log *slog.Logger) {
+func Register(gRPC *grpc.Server, service application.UserService, log *slog.Logger) {
 
 	auth1.RegisterUserServiceServer(gRPC, &userGRPCApi{
 		service: service,
