@@ -12,6 +12,7 @@ import (
 )
 
 // todo: все тесты, cover >80%
+// todo: переписать тесты после изменения кода
 //go test ./internal/application/... -coverprofile=coverage.out
 //go tool cover -html=coverage.out
 
@@ -24,11 +25,14 @@ func TestUserServiceHandler_CreateUser(t *testing.T) {
 
 	repository := mockusers.NewMockUserRepository(ctrl)
 	passwordHasher := mockusers.NewMockPasswordHasher(ctrl)
-
+	passwordVerifier := mockusers.NewMockPasswordVerifier(ctrl)
+	tokenGenerator := mockusers.NewMockTokenGenerator(ctrl)
 	type fields struct {
 		save         *gomock.Call
 		checkEmail   *gomock.Call
 		passwordHash *gomock.Call
+		passwordVer  *gomock.Call
+		tokenGen     *gomock.Call
 	}
 
 	type args struct {
@@ -56,6 +60,8 @@ func TestUserServiceHandler_CreateUser(t *testing.T) {
 					Hash(gomock.Any()).
 					Return([]byte("hashpassword"), nil).
 					AnyTimes(),
+				passwordVer: passwordVerifier.EXPECT().Verify(gomock.Any(), gomock.Any()).Return(true, nil).AnyTimes(),
+				tokenGen:    tokenGenerator.EXPECT().GenerateToken(gomock.Any()).Return("token", nil).AnyTimes(),
 			},
 			args: args{
 				name:     "testname",
@@ -66,7 +72,7 @@ func TestUserServiceHandler_CreateUser(t *testing.T) {
 	}
 
 	for _, tt := range cases {
-		service := NewUserService(repository, passwordHasher, log)
+		service := NewUserService(repository, passwordHasher, passwordVerifier, tokenGenerator, log)
 		uuid, err := service.CreateUser(context.Background(), tt.args.name, tt.args.email, tt.args.password)
 
 		assert.NoError(t, err, "should not error")
@@ -80,13 +86,14 @@ func TestUserServiceHandler_CreateUser(t *testing.T) {
 func TestUserServiceHandler_checkUniqueEmail(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	repository := mockusers.NewMockUserRepository(ctrl)
+
 	repository.EXPECT().
 		ExistsByEmail(context.Background(), gomock.Any()).
 		Return(false, nil).
 		AnyTimes()
 	email, err := users.NewEmail("email@gmail.com")
 	assert.NoError(t, err, "should not error")
-	service := NewUserService(repository, nil, log)
+	service := NewUserService(repository, nil, nil, nil, log)
 	err = service.checkUniqueEmail(context.Background(), email)
 	assert.NoError(t, err, "should not error")
 }
@@ -100,7 +107,7 @@ func TestUserServiceHandler_checkUniqueEmail_failed(t *testing.T) {
 		AnyTimes()
 	email, err := users.NewEmail("email@gmail.com")
 	assert.NoError(t, err, "should not error")
-	service := NewUserService(repository, nil, log)
+	service := NewUserService(repository, nil, nil, nil, log)
 	err = service.checkUniqueEmail(context.Background(), email)
 	assert.Error(t, err, "should error")
 }
@@ -117,7 +124,7 @@ func TestUserServiceHandler_GetUser(t *testing.T) {
 		Get(context.Background(), gomock.Any()).
 		Return(user, nil)
 
-	service := NewUserService(repository, nil, log)
+	service := NewUserService(repository, nil, nil, nil, log)
 
 	u, err := service.GetUser(context.Background(), user.ID())
 	assert.Equal(t, user, u, "should return user")
