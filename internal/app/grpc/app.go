@@ -3,25 +3,33 @@ package grpc
 import (
 	"github.com/LeoUraltsev/auth-service/internal/domain/users"
 	userGrpc "github.com/LeoUraltsev/auth-service/internal/infrastructure/grpc"
+	"github.com/LeoUraltsev/auth-service/internal/infrastructure/interceptors"
 	"google.golang.org/grpc"
 	"log/slog"
 	"net"
 )
 
 type App struct {
-	log     *slog.Logger
-	gRPC    *grpc.Server
-	address string
+	log           *slog.Logger
+	gRPC          *grpc.Server
+	tokenVerifier interceptors.TokenVerifier
+	address       string
 }
 
-func NewApp(service users.UserServiceHandler, log *slog.Logger, address string) *App {
-	gRPC := grpc.NewServer()
+func NewApp(service users.UserServiceHandler, log *slog.Logger, tokenVerifier interceptors.TokenVerifier, address string) *App {
+
+	i := interceptors.New(log, tokenVerifier)
+
+	gRPC := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(i.RequestID, i.Auth),
+	)
 
 	userGrpc.Register(gRPC, service, log)
 	return &App{
-		log:     log,
-		gRPC:    gRPC,
-		address: address,
+		log:           log,
+		gRPC:          gRPC,
+		tokenVerifier: tokenVerifier,
+		address:       address,
 	}
 }
 

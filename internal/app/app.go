@@ -46,7 +46,7 @@ func (a *App) Run() error {
 
 	userService := application.NewUserService(userStorage, hash, hash, tg, log)
 
-	rpc := grpc.NewApp(userService, log, a.cfg.GRPC.Address)
+	rpc := grpc.NewApp(userService, log, tg, a.cfg.GRPC.Address)
 
 	chErrRpc := make(chan error)
 	go func() {

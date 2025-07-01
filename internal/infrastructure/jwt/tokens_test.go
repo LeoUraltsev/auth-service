@@ -13,7 +13,7 @@ func TestToken_GenerateToken(t *testing.T) {
 	log, _ := logger.NewLogger("development")
 	cfg := &config.Config{
 		JWT: config.JWTConfig{
-			Secret:     "qwerty",
+			Secret:     "14f982080eacd7e38bd7a74fc0519946",
 			Expiration: 1 * time.Hour,
 		},
 	}
@@ -22,7 +22,11 @@ func TestToken_GenerateToken(t *testing.T) {
 	token, err := tkn.GenerateToken(id)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
-	err = tkn.ValidateToken(token)
+	claims, err := tkn.ValidateToken(token)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, claims)
+	token1 := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTEzNzkxMTQsInVzZXJfaWQiOiJmMTkzMzY1Mi0zOTcyLTQ4ZDQtYjhlNy1hODM2YjZjNmE4NDkifQ.m00yEpITDpyPt8d4ksfcImo6Vm3oH_BbPlA0A2idZyA"
+	_, err = tkn.ValidateToken(token1)
 	assert.NoError(t, err)
 
 }

@@ -44,7 +44,7 @@ func (t *Token) GenerateToken(userID uuid.UUID) (string, error) {
 	return signedString, err
 }
 
-func (t *Token) ValidateToken(token string, id uuid.UUID) (*AuthClaims, error) {
+func (t *Token) ValidateToken(token string) (*AuthClaims, error) {
 	tkn, err := jwt.ParseWithClaims(
 		token,
 		&AuthClaims{},
@@ -53,15 +53,18 @@ func (t *Token) ValidateToken(token string, id uuid.UUID) (*AuthClaims, error) {
 		},
 	)
 	if err != nil {
+		t.log.Warn("Failed to parse token", slog.String("err", err.Error()))
 		return nil, err
 	}
 
 	claims, ok := tkn.Claims.(*AuthClaims)
 	if !ok {
+		t.log.Warn("Failed to get claims", slog.String("token", token))
 		return nil, fmt.Errorf("unknown claims type")
 	}
 	exp := claims.RegisteredClaims.ExpiresAt.Time
 	if time.Now().UTC().After(exp) {
+		t.log.Warn("Token expired", slog.String("token", token))
 		return nil, fmt.Errorf("token expired")
 	}
 

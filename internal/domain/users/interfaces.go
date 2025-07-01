@@ -33,7 +33,3 @@ type UserRepository interface {
 type TokenGenerator interface {
 	GenerateToken(userID uuid.UUID) (string, error)
 }
-
-type TokenVerifier interface {
-	ValidateToken(token string) (bool, error)
-}

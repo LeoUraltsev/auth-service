@@ -22,6 +22,7 @@ type userGRPCApi struct {
 }
 
 func Register(gRPC *grpc.Server, service users.UserServiceHandler, log *slog.Logger) {
+
 	auth1.RegisterUserServiceServer(gRPC, &userGRPCApi{
 		service: service,
 		log:     log,
