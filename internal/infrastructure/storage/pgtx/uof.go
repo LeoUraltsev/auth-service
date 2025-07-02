@@ -5,7 +5,6 @@ import (
 	pg "github.com/LeoUraltsev/auth-service/internal/app/postgres"
 	"github.com/LeoUraltsev/auth-service/internal/domain/users"
 	"github.com/LeoUraltsev/auth-service/internal/helper/logger"
-	"github.com/LeoUraltsev/auth-service/internal/infrastructure/storage/postgres"
 	"log/slog"
 )
 
@@ -28,9 +27,16 @@ func (s *StorageUnitOfWork) Execute(ctx context.Context, fn func(repository user
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(ctx)
-	
-	repo := postgres.NewUsersStorage(s.pg, log)
+	defer func() {
+		err = tx.Rollback(ctx)
+		if err != nil {
+			log.Warn("failed to rollback transaction", slog.String("error", err.Error()))
+			return
+		}
+		log.Info("transaction rolled back")
+	}()
+
+	repo := NewUsersStorage(tx, log)
 
 	if err = fn(repo); err != nil {
 		return err
