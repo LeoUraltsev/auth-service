@@ -3,6 +3,7 @@ package users
 import (
 	"errors"
 	"github.com/google/uuid"
+	"regexp"
 	"time"
 )
 
@@ -14,6 +15,8 @@ var (
 	ErrPasswordTooShort   = errors.New("password is too short")
 	ErrInvalidCredentials = errors.New("invalid credentials")
 )
+
+var validEmail = regexp.MustCompile("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+.[a-zA-Z]{2,}$")
 
 type Name string
 type Email struct {
@@ -133,6 +136,11 @@ func (e Email) validate() error {
 	if len(e.value) == 0 {
 		return ErrEmailNotValid
 	}
+
+	if !validEmail.MatchString(e.value) {
+		return ErrEmailNotValid
+	}
+
 	return nil
 }
 
