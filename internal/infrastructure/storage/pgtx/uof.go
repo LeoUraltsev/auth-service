@@ -2,9 +2,11 @@ package pgtx
 
 import (
 	"context"
+	"errors"
 	pg "github.com/LeoUraltsev/auth-service/internal/app/postgres"
 	"github.com/LeoUraltsev/auth-service/internal/domain/users"
 	"github.com/LeoUraltsev/auth-service/internal/helper/logger"
+	"github.com/jackc/pgx/v5"
 	"log/slog"
 )
 
@@ -29,6 +31,9 @@ func (s *StorageUnitOfWork) Execute(ctx context.Context, fn func(repository user
 	}
 	defer func() {
 		err = tx.Rollback(ctx)
+		if errors.Is(err, pgx.ErrTxClosed) {
+			return
+		}
 		if err != nil {
 			log.Warn("failed to rollback transaction", slog.String("error", err.Error()))
 			return
