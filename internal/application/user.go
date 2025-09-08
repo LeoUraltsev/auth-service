@@ -10,15 +10,6 @@ import (
 	"strings"
 )
 
-/*
-todo: 1.для проверки существования и удаления нужно продумать транзакции так как используется несколько запросов к бд
-есть риск невалидных данных. нужно продумать слой где будут запускаться транзакции
-
-todo: 2. обработка ошибок, domain слоя
-
-todo: 3. нужна обработка от возможности изменения и удаления чужих данных (сейчас по любому токену можно изменить любого юзера)
-*/
-
 type UnitOfWork interface {
 	Execute(ctx context.Context, fn func(repository users.UserRepository) error) error
 }
@@ -108,7 +99,6 @@ func (s *UserServiceHandler) CreateUser(ctx context.Context, name string, email 
 	return user.ID(), nil
 }
 
-// todo: разделить на уровне domain получаешь своего пользователя или собеседника
 func (s *UserServiceHandler) GetUser(ctx context.Context, id uuid.UUID) (*users.User, error) {
 	log := logger.LogWithContext(ctx, s.log)
 	log.Info("getting user")
