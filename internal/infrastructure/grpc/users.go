@@ -30,7 +30,6 @@ func Register(gRPC *grpc.Server, service application.UserService, log *slog.Logg
 	})
 }
 
-//todo: интерсептор для получения id запроса
 //todo: разные типы ошибок (невалидные данные, пользователь уже есть, внутренняя ошибка)
 
 func (a *userGRPCApi) CreateUser(ctx context.Context, request *auth1.CreateUserRequest) (*auth1.CreateUserResponse, error) {
